@@ -44,11 +44,11 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link BalancedFluxProcessor}
+ * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link Broadcaster}
  */
 @Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable, BalancedFluxProcessor<T> {
+		implements Fuseable, Broadcaster<T> {
 
 	/**
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
@@ -369,6 +369,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public boolean isTerminated() {
 		return buffer.isDone();
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		return buffer.capacity() - buffer.size();
 	}
 
 	boolean add(FluxReplay.ReplaySubscription<T> rs) {

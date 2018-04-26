@@ -109,7 +109,7 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
 			}
 			if (key == Attr.CANCELLED) {
-				return OperatorDisposables.isDisposed(disposable);
+				return isCancelled();
 			}
 
 			return InnerProducer.super.scanUnsafe(key);
@@ -171,6 +171,29 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			else {
 				Operators.onOperatorError(e, actual.currentContext());
 			}
+		}
+
+		/**
+		 * Calls {@link #success(Object)}. The {@link MonoSink} shouldn't be called after
+		 * that, as it sends the onComplete signal.
+		 *
+		 * @param t the value to emit, not null
+		 * @return the {@link MonoSink}
+		 */
+		@Override
+		public MonoSink<T> next(T t) {
+			success(t);
+			return this;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return state >= HAS_REQUEST_NO_VALUE ? 1 : 0;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return OperatorDisposables.isDisposed(disposable);
 		}
 
 		@Override

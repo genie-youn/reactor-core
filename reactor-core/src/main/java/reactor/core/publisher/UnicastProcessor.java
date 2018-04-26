@@ -40,13 +40,13 @@ import reactor.util.context.Context;
  * The implementation keeps the order of signals.
  *
  * @param <T> the input and output type
- * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link BalancedFluxProcessor}
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link Broadcaster}
  */
 @Deprecated
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
 		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
-		           BalancedFluxProcessor<T> {
+		           Broadcaster<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -170,9 +170,22 @@ public final class UnicastProcessor<T>
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link Broadcaster#getAvailableCapacity()} instead
+	 */
 	@Override
+	@Deprecated
 	public int getBufferSize() {
 		return Queues.capacity(this.queue);
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		int cap = Queues.capacity(this.queue);
+		if (cap < 0) {
+			return Long.MAX_VALUE;
+		}
+		return cap;
 	}
 
 	@Override
@@ -463,8 +476,13 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	public void dispose() {
+		cancel();
+	}
+
+	@Override
 	public boolean isDisposed() {
-		return cancelled || done;
+		return cancelled;
 	}
 
 	@Override

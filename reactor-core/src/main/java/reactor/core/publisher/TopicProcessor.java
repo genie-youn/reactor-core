@@ -66,7 +66,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
- * @deprecated instantiate through {@link Processors#fanOut()} and use as a {@link BalancedFluxProcessor}
+ * @deprecated instantiate through {@link Processors#fanOut()} and use as a {@link Broadcaster}
  */
 @Deprecated
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
@@ -352,6 +352,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
+	@Deprecated
 	public Flux<E> drain() {
 		return coldSource(ringBuffer, null, error, minimum);
 	}

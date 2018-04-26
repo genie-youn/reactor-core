@@ -44,14 +44,15 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#first} and use as a {@link BalancedMonoProcessor}
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link Broadcaster}
  */
 @Deprecated
 public final class MonoProcessor<O> extends Mono<O>
-		implements CoreSubscriber<O>, Subscription,
+		implements CoreSubscriber<O>,
+		           Subscription,
 		           Scannable,
 		           LongSupplier,
-		           BalancedMonoProcessor<O> {
+		           Broadcaster<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -102,11 +103,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public Mono<O> asMono() {
-		return this;
-	}
-
-	@Override
 	public final void cancel() {
 		int state = this.state;
 		for (; ; ) {
@@ -126,7 +122,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public void dispose() {
 		cancel();
-
 	}
 
 	/**
@@ -208,8 +203,18 @@ public final class MonoProcessor<O> extends Mono<O>
 		return error;
 	}
 
-	@Override
+	/**
+	 * @deprecated use {@link #isDisposed()}
+	 * @return
+	 */
+	@Deprecated
 	public boolean isCancelled() {
+		return isDisposed();
+	}
+
+	@Override
+	public boolean isDisposed() {
+		//used to also return true if isTerminated()
 		return state == STATE_CANCELLED;
 	}
 
@@ -218,9 +223,34 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state == STATE_ERROR;
 	}
 
-	@Override
 	public final boolean isSuccess() {
 		return state == STATE_COMPLETE_NO_VALUE || state == STATE_SUCCESS_VALUE;
+	}
+
+	@Override
+	public MonoSink<O> sink() {
+		return new MonoCreate.DefaultMonoSink<>(this);
+	}
+
+	/**
+	 * Equivalent to calling {@link #sink()}, the strategy is ignored.
+	 *
+	 * @param strategy is ignored
+	 * @return the {@link MonoSink}
+	 */
+	@Override
+	public MonoSink<O> sink(FluxSink.OverflowStrategy strategy) {
+		return sink();
+	}
+
+	@Override
+	public Flux<O> asFlux() {
+		return this.flux();
+	}
+
+	@Override
+	public Mono<O> asMono() {
+		return this;
 	}
 
 	@Override
@@ -229,8 +259,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public boolean isDisposed() {
-		return isTerminated() || isCancelled();
+	public long getAvailableCapacity() {
+		if (isTerminated()) {
+			return 0L;
+		}
+		return 1L;
 	}
 
 	@Override
@@ -359,7 +392,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state;
 	}
 
-	@Override
 	@Nullable
 	public O peek() {
 		int endState = this.state;
@@ -430,6 +462,9 @@ public final class MonoProcessor<O> extends Mono<O>
 		return null;
 	}
 
+	/**
+	 * @return true if not {@link #isTerminated()} nor {@link #isCancelled()}
+	 */
 	final boolean isPending() {
 		return !isTerminated() && !isCancelled();
 	}

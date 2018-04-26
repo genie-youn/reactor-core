@@ -45,7 +45,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.publisher.BalancedFluxProcessor;
+import reactor.core.publisher.Broadcaster;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
@@ -202,7 +202,7 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		BalancedFluxProcessor<String> hotSource = Processors.unicast();
+		Broadcaster<String> hotSource = Processors.unicast();
 
 		Flux<String> hotFlux = hotSource.asFlux()
 		                                .publish()

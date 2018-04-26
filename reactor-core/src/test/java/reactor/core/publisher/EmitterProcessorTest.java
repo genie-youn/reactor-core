@@ -720,6 +720,21 @@ public class EmitterProcessorTest {
 		assertProcessor(processor, bufferSize, autoCancel);
 	}
 
+	@Test
+	public void cancelIsDisposed() {
+		Broadcaster<Integer> processor = Processors.emitter();
+		assertThat(processor).isExactlyInstanceOf(EmitterProcessor.class);
+
+		assertThat(processor.isDisposed()).as("not yet disposed").isFalse();
+
+		processor.dispose();
+
+		assertThat(processor.isDisposed()).as("disposed").isTrue();
+		assertThat(((EmitterProcessor) processor).isCancelled())
+				.as("isCancelled")
+				.isTrue();
+	}
+
 	public void assertProcessor(EmitterProcessor<Integer> processor,
 			@Nullable Integer bufferSize,
 			@Nullable Boolean autoCancel) {

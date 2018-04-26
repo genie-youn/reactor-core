@@ -167,7 +167,7 @@ Compare the first example to the second example, shown in the following code:
 
 [source,java]
 ----
-BalancedFluxProcessor<String> hotSource = Processors.unicast();
+Broadcaster<String> hotSource = Processors.unicast();
 
 Flux<String> hotFlux = hotSource.asFlux()
                                 .publish()

@@ -33,6 +33,19 @@ import reactor.util.context.Context;
 public interface FluxSink<T> {
 
 	/**
+	 * Emit an element and immediately complete afterward.
+	 * <p>
+	 * Some implementations have {@link Mono} like semantics and will take that as
+	 * the only value to emit.
+	 *
+	 * @param last the element to emit last
+	 */
+	default void complete(T last) {
+		next(last);
+		complete();
+	}
+
+	/**
      * @see Subscriber#onComplete()
      */
     void complete();

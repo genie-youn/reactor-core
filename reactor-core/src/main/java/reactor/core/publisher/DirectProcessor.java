@@ -41,11 +41,10 @@ import reactor.util.annotation.Nullable;
  * A terminated DirectProcessor will emit the terminal signal to late subscribers.
  *
  * @param <T> the input and output value type
- * @deprecated instantiate through {@link Processors#direct()} and use as a {@link BalancedFluxProcessor}
+ * @deprecated instantiate through {@link Processors#direct()} and use as a {@link Broadcaster}
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T>
-		implements BalancedFluxProcessor<T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Broadcaster<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -80,11 +79,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Flux<T> asFlux() {
-		return this;
-	}
-
-	@Override
 	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
@@ -100,8 +94,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
+	boolean valued = false;
+
 	@Override
 	public void onNext(T t) {
+		valued = true;
 		Objects.requireNonNull(t, "t");
 
 		DirectInner<T>[] inners = subscribers;
@@ -246,12 +243,31 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public boolean isSuccess() {
+		return hasCompleted() && valued;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
 	@Nullable
 	public Throwable getError() {
 		if (subscribers == TERMINATED) {
 			return error;
 		}
 		return null;
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		long cap = 0L;
+		for (DirectInner inner : subscribers) {
+			cap = Math.max(inner.requested, cap);
+		}
+		return cap;
 	}
 
 	static final class DirectInner<T> implements InnerProducer<T> {

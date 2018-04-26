@@ -31,18 +31,28 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type emitted
  */
-public interface MonoSink<T> {
+public interface MonoSink<T> extends FluxSink<T> {
 
 	/**
-	 * Return the current subscriber {@link Context}.
-	 * <p>
-	 *   {@link Context} can be enriched via {@link Mono#subscriberContext(Function)}
-	 *   operator or directly by a child subscriber overriding
-	 *   {@link CoreSubscriber#currentContext()}
+	 * Equivalent to calling {@link #success()}.
 	 *
-	 * @return the current subscriber {@link Context}.
+	 * @see #success()
 	 */
-	Context currentContext();
+	@Override
+	default void complete() {
+		success();
+	}
+
+	/**
+	 * Equivalent to calling {@link #success(Object)}.
+	 *
+	 * @param last the element to complete with
+	 * @see #success(Object)
+	 */
+	@Override
+	default void complete(T last) {
+		success(last);
+	}
 
 	/**
 	 * Complete without any value. <p>Calling this method multiple times or after the
@@ -60,18 +70,6 @@ public interface MonoSink<T> {
 	 * @param value the value to complete with
 	 */
 	void success(@Nullable T value);
-
-	/**
-	 * Terminate with the give exception
-	 * <p>Calling this method multiple times or after the other terminating methods is
-	 * an unsupported operation. It will discard the exception through the
-	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
-	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
-	 * complete and silent swallowing of the exception.
-	 *
-	 * @param e the exception to complete with
-	 */
-	void error(Throwable e);
 
 	/**
 	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of

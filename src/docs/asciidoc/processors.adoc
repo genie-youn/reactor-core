@@ -3,7 +3,7 @@ that you can `subscribe` to a `Processor`, but you can also call methods to manu
 data into the sequence or terminate it.
 
 Reactor offers a basic interface for Processors that have the same input and output types,
-the `BalancedFluxProcessor`, with different flavors exposed on the `Processors` utility
+the `Broadcaster`, with different flavors exposed on the `Processors` utility
 class.
 
 Each flavor has a few particular semantics, but before you start looking into these, you
@@ -30,13 +30,13 @@ Rather than directly using Reactor `Processors`, it is a good practice to obtain
 for the `Processor` by calling `sink()` **once** (and storing the result in a variable to
 reuse it).
 
-`BalancedFluxProcessor` sinks safely gate multi-threaded producers and can be used by
+`Broadcaster` sinks safely gate multi-threaded producers and can be used by
 applications that generate data from multiple threads concurrently. For example, a
 thread-safe serialized sink can be created for the `unicast` flavor:
 
 [source,java]
 ----
-BalancedFluxProcessor<Integer> processor = Processors.unicast().build();
+Broadcaster<Integer> processor = Processors.unicast().build();
 FluxSink<Integer> sink = processor.sink(overflowStrategy);
 ----
 
@@ -80,7 +80,7 @@ which limits the sink interactions to follow the semantics of `Mono` (0-1 elemen
 == Direct Processor
 [source,java]
 ----
-BalancedFluxProcessor<Integer> direct = Processors.direct();
+Broadcaster<Integer> direct = Processors.direct();
 ----
 
 A **direct** `Processor` can dispatch signals to zero to many `Subscribers`, but has the
@@ -98,7 +98,7 @@ replays the termination signal to them immediately.
 [source,java]
 ----
 UnicastProcessorBuilder<Integer> builder = Processors.unicast();
-BalancedFluxProcessor<Integer> unicast = builder.build();
+Broadcaster<Integer> unicast = builder.build();
 ----
 
 A **unicast** `Processor` can deal with backpressure using an internal buffer.
@@ -120,7 +120,7 @@ on each rejected element, allowing for cleanup of these rejected elements.
 [source,java]
 ----
 EmitterProcessorBuilder<Integer> builder = Processors.emitter();
-BalancedFluxProcessor<Integer> emitter = builder.build();
+Broadcaster<Integer> emitter = builder.build();
 ----
 
 An **emitter** `Processor` is capable of emitting to several subscribers, while honoring
@@ -146,7 +146,7 @@ This can be deactivated by using the `noAutoCancel()` method in the builder.
 [source,java]
 ----
 ReplayProcessorBuilder<Integer> builder = Processors.replay();
-BalancedFluxProcessor<Integer> replay = builder.build();
+Broadcaster<Integer> replay = builder.build();
 ----
 
 A **replay** `Processor` caches elements that are either pushed directly through its `FluxSink`
@@ -169,7 +169,7 @@ element: `Processors.cacheLast()`.
 [source,java]
 ----
 FanOutProcessorBuilder<Integer> builder = Processors.fanOut();
-BalancedFluxProcessor<Integer> fanOut = builder.build();
+Broadcaster<Integer> fanOut = builder.build();
 ----
 
 A **fan out** `Processor` is an **asynchronous** processor capable of relaying elements from
@@ -204,12 +204,12 @@ cancelled.
 [source,java]
 ----
 MonoFirstProcessorBuilder<Integer> builder = Processors.first();
-BalancedMonoProcessor<Integer> first = builder
+Broadcaster<Integer> first = builder
     .attachSource(Flux.range(1, 10))
     .build();
 //will emit `1`
 ----
 
-A **first** `Processor` is a `BalancedMonoProcessor` that captures the _first_ element
+A **first** `Processor` is a `Broadcaster` that captures the _first_ element
 that is pushed through it (either manually or by an upstream source `Publisher`) and
 replays it to further `Subscribers`.

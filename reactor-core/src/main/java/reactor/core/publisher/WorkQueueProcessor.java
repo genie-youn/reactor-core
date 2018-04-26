@@ -329,6 +329,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
+	@Deprecated
 	public Flux<E> drain() {
 		return TopicProcessor.coldSource(ringBuffer, null, error, workSequence);
 	}

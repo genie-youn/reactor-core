@@ -32,14 +32,14 @@ import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
- * Utility class to create various flavors of {@link  BalancedFluxProcessor Flux Processors}.
+ * Utility class to create various flavors of {@link  Broadcaster Flux Processors}.
  *
  * @author Simon Baslé
  */
 public final class Processors {
 
 	/**
-	 * Create a "direct" {@link BalancedFluxProcessor}: it can dispatch signals to zero to many
+	 * Create a "direct" {@link Broadcaster}: it can dispatch signals to zero to many
 	 * {@link Subscriber Subscribers}, but has the limitation of not
 	 * handling backpressure.
 	 * <p>
@@ -47,20 +47,20 @@ public final class Processors {
 	 * subscribers if you push N elements through it but at least one of its subscribers has
 	 * requested less than N.
 	 * <p>
-	 * Once the Processor has terminated (usually through its {@link BalancedFluxProcessor#sink() Sink}
+	 * Once the Processor has terminated (usually through its {@link Broadcaster#sink() Sink}
 	 * {@link FluxSink#error(Throwable)} or {@link FluxSink#complete()} methods being called),
 	 * it lets more subscribers subscribe but replays the termination signal to them immediately.
 	 *
 	 * @param <T> the type of the data flowing through the processor
-	 * @return a new direct {@link BalancedFluxProcessor}
+	 * @return a new direct {@link Broadcaster}
 	 */
 	@SuppressWarnings("deprecation")
-	public static final <T> BalancedFluxProcessor<T> direct() {
+	public static final <T> Broadcaster<T> direct() {
 		return new DirectProcessor<>();
 	}
 
 	/**
-	 * Create an unbounded "unicast" {@link BalancedFluxProcessor}, which can deal with
+	 * Create an unbounded "unicast" {@link Broadcaster}, which can deal with
 	 * backpressure using an internal buffer, but <strong>can have at most one
 	 * {@link Subscriber}</strong>.
 	 * <p>
@@ -71,14 +71,14 @@ public final class Processors {
 	 * configuration.
 	 *
 	 * @param <T>
-	 * @return a new unicast {@link BalancedFluxProcessor}
+	 * @return a new unicast {@link Broadcaster}
 	 */
-	public static final <T> BalancedFluxProcessor<T> unicast() {
+	public static final <T> Broadcaster<T> unicast() {
 		return UnicastProcessor.create();
 	}
 
 	/**
-	 * Create a builder for a "unicast" {@link BalancedFluxProcessor}, which can deal with
+	 * Create a builder for a "unicast" {@link Broadcaster}, which can deal with
 	 * backpressure using an internal buffer, but <strong>can have at most one
 	 * {@link Subscriber}</strong>.
 	 * <p>
@@ -90,14 +90,14 @@ public final class Processors {
 	 *
 	 * @param queue the {@link Queue} to back the processor, making it bounded or unbounded
 	 * @param <T>
-	 * @return a builder to create a new unicast {@link BalancedFluxProcessor}
+	 * @return a builder to create a new unicast {@link Broadcaster}
 	 */
 	public static final <T> UnicastProcessorBuilder<T> unicast(Queue<T> queue) {
 		return new UnicastProcessorBuilder<>(queue);
 	}
 
 	/**
-	 * Create a new "emitter" {@link BalancedFluxProcessor}, which is capable
+	 * Create a new "emitter" {@link Broadcaster}, which is capable
 	 * of emitting to several {@link Subscriber Subscribers} while honoring backpressure
 	 * for each of its subscribers. It can also subscribe to a {@link Publisher} and relay
 	 * its signals synchronously.
@@ -106,7 +106,7 @@ public final class Processors {
 	 * Initially, when it has no {@link Subscriber}, this emitter Processor can still accept
 	 * a few data pushes up to {@link Queues#SMALL_BUFFER_SIZE}.
 	 * After that point, if no {@link Subscriber} has come in and consumed the data,
-	 * calls to {@link BalancedFluxProcessor#onNext(Object) onNext} block until the processor
+	 * calls to {@link Broadcaster#onNext(Object) onNext} block until the processor
 	 * is drained (which can only happen concurrently by then).
 	 *
 	 * <p>
@@ -122,14 +122,14 @@ public final class Processors {
 	 * it will clear its internal buffer and stop accepting new subscribers. This can be
 	 * tuned by creating a processor through the builder method, {@link #emitter(int)}.
 	 *
-	 * @return a new auto-cancelling emitter {@link BalancedFluxProcessor}
+	 * @return a new auto-cancelling emitter {@link Broadcaster}
 	 */
-	public static final <T> BalancedFluxProcessor<T> emitter() {
+	public static final <T> Broadcaster<T> emitter() {
 		return new EmitterProcessorBuilder(-1).build();
 	}
 
 	/**
-	 * Create a builder for an "emitter" {@link BalancedFluxProcessor}, which is capable
+	 * Create a builder for an "emitter" {@link Broadcaster}, which is capable
 	 * of emitting to several {@link Subscriber Subscribers} while honoring backpressure
 	 * for each of its subscribers. It can also subscribe to a {@link Publisher} and relay
 	 * its signals synchronously.
@@ -138,7 +138,7 @@ public final class Processors {
 	 * Initially, when it has no {@link Subscriber}, an emitter Processor can still accept
 	 * a few data pushes up to a configurable {@code bufferSize}.
 	 * After that point, if no {@link Subscriber} has come in and consumed the data,
-	 * calls to {@link BalancedFluxProcessor#onNext(Object) onNext} block until the processor
+	 * calls to {@link Broadcaster#onNext(Object) onNext} block until the processor
 	 * is drained (which can only happen concurrently by then).
 	 *
 	 * <p>
@@ -155,7 +155,7 @@ public final class Processors {
 	 * {@link EmitterProcessorBuilder#noAutoCancel()} method in the builder.
 	 *
 	 * @param bufferSize the size of the initial replay buffer (must be positive)
-	 * @return a builder to create a new emitter {@link BalancedFluxProcessor}
+	 * @return a builder to create a new emitter {@link Broadcaster}
 	 */
 	public static final EmitterProcessorBuilder emitter(int bufferSize) {
 		if (bufferSize < 0) {
@@ -165,8 +165,8 @@ public final class Processors {
 	}
 
 	/**
-	 * Create a new unbounded "replay" {@link BalancedFluxProcessor}, which caches
-	 * elements that are either pushed directly through its {@link BalancedFluxProcessor#sink() sink}
+	 * Create a new unbounded "replay" {@link Broadcaster}, which caches
+	 * elements that are either pushed directly through its {@link Broadcaster#sink() sink}
 	 * or elements from an upstream {@link Publisher}, and replays them to late
 	 * {@link Subscriber Subscribers}.
 	 *
@@ -193,15 +193,15 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link BalancedFluxProcessor}
+	 * @return a builder to create a new replay {@link Broadcaster}
 	 */
-	public static final <T> BalancedFluxProcessor<T> replay() {
+	public static final <T> Broadcaster<T> replay() {
 		return ReplayProcessor.create();
 	}
 
 	/**
-	 * Create a builder for a "replay" {@link BalancedFluxProcessor}, which caches
-	 * elements that are either pushed directly through its {@link BalancedFluxProcessor#sink() sink}
+	 * Create a builder for a "replay" {@link Broadcaster}, which caches
+	 * elements that are either pushed directly through its {@link Broadcaster#sink() sink}
 	 * or elements from an upstream {@link Publisher}, and replays them to late
 	 * {@link Subscriber Subscribers}.
 	 *
@@ -227,15 +227,15 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link BalancedFluxProcessor}
+	 * @return a builder to create a new replay {@link Broadcaster}
 	 */
 	public static final ReplayTimeProcessorBuilder replay(Duration maxAge) {
 		return new ReplayTimeProcessorBuilder(maxAge);
 	}
 
 	/**
-	 * Create a builder for a "replay" {@link BalancedFluxProcessor}, which caches
-	 * elements that are either pushed directly through its {@link BalancedFluxProcessor#sink() sink}
+	 * Create a builder for a "replay" {@link Broadcaster}, which caches
+	 * elements that are either pushed directly through its {@link Broadcaster#sink() sink}
 	 * or elements from an upstream {@link Publisher}, and replays them to late
 	 * {@link Subscriber Subscribers}.
 	 *
@@ -261,46 +261,46 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link BalancedFluxProcessor}
+	 * @return a builder to create a new replay {@link Broadcaster}
 	 */
 	public static final ReplayProcessorBuilder replay(int historySize) {
 		return new ReplayProcessorBuilder(historySize);
 	}
 
 	/**
-	 * Create a new "replay" {@link BalancedFluxProcessor} (see {@link #replay()}) that
+	 * Create a new "replay" {@link Broadcaster} (see {@link #replay()}) that
 	 * caches the last element it has pushed, replaying it to late {@link Subscriber subscribers}.
 	 *
 	 * @param <T>
-	 * @return a new replay {@link BalancedFluxProcessor} that caches its last pushed element
+	 * @return a new replay {@link Broadcaster} that caches its last pushed element
 	 */
-	public static final <T> BalancedFluxProcessor<T> cacheLast() {
+	public static final <T> Broadcaster<T> cacheLast() {
 		return ReplayProcessor.cacheLast();
 	}
 
 	/**
-	 * Create a new "replay" {@link BalancedFluxProcessor} (see {@link #replay()}) that
+	 * Create a new "replay" {@link Broadcaster} (see {@link #replay()}) that
 	 * caches the last element it has pushed, replaying it to late {@link Subscriber subscribers}.
 	 * If a {@link Subscriber} comes in <strong>before</strong> any value has been pushed,
 	 * then the {@code defaultValue} is emitted instead.
 	 *
 	 * @param <T>
-	 * @return a new replay {@link BalancedFluxProcessor} that caches its last pushed element
+	 * @return a new replay {@link Broadcaster} that caches its last pushed element
 	 */
-	public static final <T> BalancedFluxProcessor<T> cacheLastOrDefault(T defaultValue) {
+	public static final <T> Broadcaster<T> cacheLastOrDefault(T defaultValue) {
 		return ReplayProcessor.cacheLastOrDefault(defaultValue);
 	}
 
 	/**
-	 * Create a builder for a "fan out" {@link BalancedFluxProcessor}, which is an
+	 * Create a builder for a "fan out" {@link Broadcaster}, which is an
 	 * <strong>asynchronous</strong> processor optionally capable of relaying elements from multiple
 	 * upstream {@link Publisher Publishers} when created in the shared configuration (see the {@link
 	 * FanOutProcessorBuilder#share(boolean)} option of the builder).
 	 *
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the Processor's
-	 * {@link BalancedFluxProcessor#onNext(Object)}, {@link BalancedFluxProcessor#onComplete()}, or
-	 * {@link BalancedFluxProcessor#onError(Throwable)} methods directly or from a concurrent upstream
+	 * {@link Broadcaster#onNext(Object)}, {@link Broadcaster#onComplete()}, or
+	 * {@link Broadcaster#onError(Throwable)} methods directly or from a concurrent upstream
 	 * {@link Publisher}.
 	 *
 	 * <p>
@@ -310,8 +310,8 @@ public final class Processors {
 	 * <p>
 	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
 	 * with the added overhead of establishing resources to keep track of each {@link Subscriber}
-	 * until an {@link BalancedFluxProcessor#onError(Throwable)} or {@link
-	 * BalancedFluxProcessor#onComplete()} signal is pushed through the processor or until the
+	 * until an {@link Broadcaster#onError(Throwable)} or {@link
+	 * Broadcaster#onComplete()} signal is pushed through the processor or until the
 	 * associated {@link Subscriber} is cancelled.
 	 *
 	 * <p>
@@ -327,14 +327,14 @@ public final class Processors {
 	 * option: If set to {@code true} (the default), it results in the source {@link Publisher
 	 * Publisher(s)} being cancelled when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new fan out {@link BalancedFluxProcessor}
+	 * @return a builder to create a new fan out {@link Broadcaster}
 	 */
 	public static final FanOutProcessorBuilder fanOut() {
 		return new TopicProcessor.Builder<>();
 	}
 
 	/**
-	 * Create a builder for a "fan out" {@link BalancedFluxProcessor} with relaxed
+	 * Create a builder for a "fan out" {@link Broadcaster} with relaxed
 	 * Reactive Streams compliance. This is an <strong>asynchronous</strong> processor
 	 * optionally capable of relaying elements from multiple upstream {@link Publisher Publishers}
 	 * when created in the shared configuration (see the {@link FanOutProcessorBuilder#share(boolean)}
@@ -342,15 +342,15 @@ public final class Processors {
 	 *
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the Processor's
-	 * {@link BalancedFluxProcessor#onNext(Object)}, {@link BalancedFluxProcessor#onComplete()}, or
-	 * {@link BalancedFluxProcessor#onError(Throwable)} methods directly or from a concurrent upstream
+	 * {@link Broadcaster#onNext(Object)}, {@link Broadcaster#onComplete()}, or
+	 * {@link Broadcaster#onError(Throwable)} methods directly or from a concurrent upstream
 	 * {@link Publisher}. Otherwise, such concurrent calls are illegal.
 	 *
 	 * <p>
 	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
 	 * with the added overhead of establishing resources to keep track of each {@link Subscriber}
-	 * until an {@link BalancedFluxProcessor#onError(Throwable)} or {@link
-	 * BalancedFluxProcessor#onComplete()} signal is pushed through the processor or until the
+	 * until an {@link Broadcaster#onError(Throwable)} or {@link
+	 * Broadcaster#onComplete()} signal is pushed through the processor or until the
 	 * associated {@link Subscriber} is cancelled.
 	 *
 	 * <p>
@@ -371,7 +371,7 @@ public final class Processors {
 	 * option: If set to {@code true} (the default), it results in the source {@link Publisher
 	 * Publisher(s)} being cancelled when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new round-robin fan out {@link BalancedFluxProcessor}
+	 * @return a builder to create a new round-robin fan out {@link Broadcaster}
 	 */
 	@Deprecated
 	public static final FanOutProcessorBuilder relaxedFanOut() {
@@ -379,7 +379,7 @@ public final class Processors {
 	}
 
 	/**
-	 * Create a "first" {@link BalancedMonoProcessor}, which will wait for a source
+	 * Create a "first" {@link Broadcaster}, which will wait for a source
 	 * {@link Subscriber#onSubscribe(Subscription)}. It will then propagate only the first
 	 * incoming {@link Subscriber#onNext(Object) onNext} signal, and cancel the source
 	 * subscription (unless it is a {@link Mono}). The processor will replay that signal
@@ -390,14 +390,14 @@ public final class Processors {
 	 * one call to {@link MonoSink#success(Object)}.
 	 *
 	 * @param <T> the type of the processor
-	 * @return a new "first" {@link BalancedMonoProcessor} that is detached
+	 * @return a new "first" {@link Broadcaster} that is detached
 	 */
-	public static final <T> BalancedMonoProcessor<T> first() {
+	public static final <T> Broadcaster<T> first() {
 		return new MonoProcessor<>(null);
 	}
 
 	/**
-	 * Create a "first" {@link BalancedMonoProcessor}, which will wait for a source
+	 * Create a "first" {@link Broadcaster}, which will wait for a source
 	 * {@link Subscriber#onSubscribe(Subscription)}. It will then propagate only the first
 	 * incoming {@link Subscriber#onNext(Object) onNext} signal, and cancel the source
 	 * subscription (unless it is a {@link Mono}). The processor will replay that signal
@@ -409,14 +409,14 @@ public final class Processors {
 	 *
 	 * @param waitStrategy the {@link WaitStrategy} to use in blocking methods of the processor
 	 * @param <T> the type of the processor
-	 * @return a new "first" {@link BalancedMonoProcessor} that is detached
+	 * @return a new "first" {@link Broadcaster} that is detached
 	 */
-	public static final <T> BalancedMonoProcessor<T> first(WaitStrategy waitStrategy) {
+	public static final <T> Broadcaster<T> first(WaitStrategy waitStrategy) {
 		return new MonoProcessor<>(null, waitStrategy);
 	}
 
 	/**
-	 * Create a builder for a "first" {@link BalancedMonoProcessor} that is attached to a
+	 * Create a builder for a "first" {@link Broadcaster} that is attached to a
 	 * {@link Publisher} source, of which it will propagate only the first incoming
 	 * {@link Subscriber#onNext(Object) onNext} signal. Once this is done, the processor
 	 * cancels the source subscription (unless it is a {@link Mono}). It will then
@@ -428,7 +428,7 @@ public final class Processors {
 	 *
 	 * @param source the source to attach to
 	 * @param <T> the type of the source, which drives the type of the processor
-	 * @return a builder to create a new "first" {@link BalancedMonoProcessor} attached to a source
+	 * @return a builder to create a new "first" {@link Broadcaster} attached to a source
 	 */
 	public static final <T> MonoFirstProcessorBuilder<T> first(Publisher<? extends T> source) {
 		return new MonoFirstProcessorBuilder<>(source);
@@ -437,7 +437,7 @@ public final class Processors {
 	//=== BUILDERS to replace factory method only processors ===
 
 	/**
-	 * A builder for the {@link #unicast()} flavor of {@link BalancedFluxProcessor}.
+	 * A builder for the {@link #unicast()} flavor of {@link Broadcaster}.
 	 *
 	 * @param <T>
 	 */
@@ -490,12 +490,12 @@ public final class Processors {
 		}
 
 		/**
-		 * Build the unicast {@link BalancedFluxProcessor} according to the builder's
+		 * Build the unicast {@link Broadcaster} according to the builder's
 		 * configuration.
 		 *
-		 * @return a new unicast {@link BalancedFluxProcessor Processor}
+		 * @return a new unicast {@link Broadcaster Processor}
 		 */
-		public BalancedFluxProcessor<T> build() {
+		public Broadcaster<T> build() {
 			if (endcallback != null && onOverflow != null) {
 				return new UnicastProcessor<>(queue, onOverflow, endcallback);
 			}
@@ -512,7 +512,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the {@link #emitter()} flavor of {@link BalancedFluxProcessor}.
+	 * A builder for the {@link #emitter()} flavor of {@link Broadcaster}.
 	 */
 	public static final class EmitterProcessorBuilder {
 
@@ -551,12 +551,12 @@ public final class Processors {
 		}
 
 		/**
-		 * Build the emitter {@link BalancedFluxProcessor} according to the builder's
+		 * Build the emitter {@link Broadcaster} according to the builder's
 		 * configuration.
 		 *
-		 * @return a new emitter {@link BalancedFluxProcessor}
+		 * @return a new emitter {@link Broadcaster}
 		 */
-		public <T> BalancedFluxProcessor<T> build() {
+		public <T> Broadcaster<T> build() {
 			if (bufferSize >= 0 && !autoCancel) {
 				return new EmitterProcessor<>(false, bufferSize);
 			}
@@ -573,7 +573,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the size-configured {@link #replay()} flavor of {@link BalancedFluxProcessor}.
+	 * A builder for the size-configured {@link #replay()} flavor of {@link Broadcaster}.
 	 */
 	public static final class ReplayProcessorBuilder {
 
@@ -604,11 +604,11 @@ public final class Processors {
 		}
 
 		/**
-		 * Build the replay {@link BalancedFluxProcessor} according to the builder's configuration.
+		 * Build the replay {@link Broadcaster} according to the builder's configuration.
 		 *
-		 * @return a new replay {@link BalancedFluxProcessor}
+		 * @return a new replay {@link Broadcaster}
 		 */
-		public <T> BalancedFluxProcessor<T> build() {
+		public <T> Broadcaster<T> build() {
 			if (size < 0) {
 				return ReplayProcessor.create();
 			}
@@ -620,7 +620,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the time-oriented {@link #replay()} flavors of {@link BalancedFluxProcessor}.
+	 * A builder for the time-oriented {@link #replay()} flavors of {@link Broadcaster}.
 	 * This can also be used to build a time + size oriented replay processor.
 	 */
 	public static final class ReplayTimeProcessorBuilder {
@@ -656,11 +656,11 @@ public final class Processors {
 		}
 
 		/**
-		 * Build the replay {@link BalancedFluxProcessor} according to the builder's configuration.
+		 * Build the replay {@link Broadcaster} according to the builder's configuration.
 		 *
-		 * @return a new replay {@link BalancedFluxProcessor}
+		 * @return a new replay {@link Broadcaster}
 		 */
-		public <T> BalancedFluxProcessor<T> build() {
+		public <T> Broadcaster<T> build() {
 			//replay size and timeout
 			if (size != -1) {
 				if (scheduler != null) {
@@ -677,7 +677,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the {@link #fanOut()} flavor of {@link BalancedFluxProcessor}.
+	 * A builder for the {@link #fanOut()} flavor of {@link Broadcaster}.
 	 */
 	public interface FanOutProcessorBuilder {
 
@@ -741,16 +741,16 @@ public final class Processors {
 		FanOutProcessorBuilder share(boolean share);
 
 		/**
-		 * Creates a new fanout {@link BalancedFluxProcessor} according to the builder's
+		 * Creates a new fanout {@link Broadcaster} according to the builder's
 		 * configuration.
 		 *
-		 * @return a new fanout {@link BalancedFluxProcessor}
+		 * @return a new fanout {@link Broadcaster}
 		 */
-		<T> BalancedFluxProcessor<T> build();
+		<T> Broadcaster<T> build();
 	}
 
 	/**
-	 * A builder for the {@link #first()} flavor of {@link BalancedMonoProcessor},
+	 * A builder for the {@link #first()} flavor of {@link Broadcaster},
 	 * directly attached to a {@link Publisher} source.
 	 *
 	 * @param <T>
@@ -767,20 +767,20 @@ public final class Processors {
 		 * Create the processor with a {@link WaitStrategy} and attach it to the source.
 		 *
 		 * @param waitStrategy the {@link WaitStrategy} to use for blocking methods of the processor
-		 * @return a new "first" {@link BalancedMonoProcessor} with a wait strategy, that
+		 * @return a new "first" {@link Broadcaster} with a wait strategy, that
 		 * is attached to a source
 		 */
-		public BalancedMonoProcessor<T> withWaitStrategy(WaitStrategy waitStrategy) {
+		public Broadcaster<T> withWaitStrategy(WaitStrategy waitStrategy) {
 			return new MonoProcessor<>(this.source, waitStrategy);
 		}
 
 		/**
-		 * Create the {@link BalancedMonoProcessor} by immediately attaching it to the
+		 * Create the {@link Broadcaster} by immediately attaching it to the
 		 * {@link Publisher} source.
 		 *
-		 * @return a new first {@link BalancedMonoProcessor} that is attached to a source
+		 * @return a new first {@link Broadcaster} that is attached to a source
 		 */
-		public BalancedMonoProcessor<T> build() {
+		public Broadcaster<T> build() {
 			return new MonoProcessor<>(source);
 		}
 	}
