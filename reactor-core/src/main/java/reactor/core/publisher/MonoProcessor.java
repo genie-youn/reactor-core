@@ -537,7 +537,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
 	 *
 	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
-	 * @deprecated use {@link MonoProcessorSink#isComplete()} instead
+	 * @deprecated use {@link Processors#first()}'s {@link MonoProcessorSink#isComplete()} instead
 	 */
 	public final boolean isSuccess() {
 		return state == STATE_SUCCESS_VALUE || state == STATE_COMPLETE_NO_VALUE;
