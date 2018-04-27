@@ -25,8 +25,10 @@ import java.util.function.LongSupplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -44,15 +46,13 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#first} and use as a {@link Broadcaster}
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link ProcessorSink}
  */
 @Deprecated
 public final class MonoProcessor<O> extends Mono<O>
-		implements CoreSubscriber<O>,
-		           Subscription,
+		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
 		           Scannable,
-		           LongSupplier,
-		           Broadcaster<O> {
+		           LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -117,11 +117,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (WIP.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
-	}
-
-	@Override
-	public void dispose() {
-		cancel();
 	}
 
 	/**
@@ -195,75 +190,6 @@ public final class MonoProcessor<O> extends Mono<O>
 
 			throw new IllegalStateException("Thread Interruption on Mono blocking read");
 		}
-	}
-
-	@Override
-	@Nullable
-	public final Throwable getError() {
-		return error;
-	}
-
-	/**
-	 * @deprecated use {@link #isDisposed()}
-	 * @return
-	 */
-	@Deprecated
-	public boolean isCancelled() {
-		return isDisposed();
-	}
-
-	@Override
-	public boolean isDisposed() {
-		//used to also return true if isTerminated()
-		return state == STATE_CANCELLED;
-	}
-
-	@Override
-	public final boolean isError() {
-		return state == STATE_ERROR;
-	}
-
-	public final boolean isSuccess() {
-		return state == STATE_COMPLETE_NO_VALUE || state == STATE_SUCCESS_VALUE;
-	}
-
-	@Override
-	public MonoSink<O> sink() {
-		return new MonoCreate.DefaultMonoSink<>(this);
-	}
-
-	/**
-	 * Equivalent to calling {@link #sink()}, the strategy is ignored.
-	 *
-	 * @param strategy is ignored
-	 * @return the {@link MonoSink}
-	 */
-	@Override
-	public MonoSink<O> sink(FluxSink.OverflowStrategy strategy) {
-		return sink();
-	}
-
-	@Override
-	public Flux<O> asFlux() {
-		return this.flux();
-	}
-
-	@Override
-	public Mono<O> asMono() {
-		return this;
-	}
-
-	@Override
-	public final boolean isTerminated() {
-		return state > STATE_POST_SUBSCRIBED;
-	}
-
-	@Override
-	public long getAvailableCapacity() {
-		if (isTerminated()) {
-			return 0L;
-		}
-		return 1L;
 	}
 
 	@Override
@@ -392,6 +318,14 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state;
 	}
 
+	/**
+	 * Returns the value that completed this {@link MonoProcessor}. Returns {@code null} if the {@link MonoProcessor} has not been completed. If the
+	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 *
+	 * @return the value that completed the {@link MonoProcessor}, or {@code null} if it has not been completed
+	 *
+	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
+	 */
 	@Nullable
 	public O peek() {
 		int endState = this.state;
@@ -462,12 +396,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		return null;
 	}
 
-	/**
-	 * @return true if not {@link #isTerminated()} nor {@link #isCancelled()}
-	 */
-	final boolean isPending() {
-		return !isTerminated() && !isCancelled();
-	}
 
 	final void connect() {
 		if(CONNECTED.compareAndSet(this, 0, 1)){
@@ -478,17 +406,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				source.subscribe(this);
 			}
 		}
-	}
-
-	@Override
-	public final long downstreamCount() {
-		//noinspection ConstantConditions
-		return Scannable.from(processor).inners().count();
-	}
-
-	@Override
-	public final boolean hasDownstreams() {
-		return downstreamCount() != 0;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -561,9 +478,102 @@ public final class MonoProcessor<O> extends Mono<O>
 		return out;
 	}
 
+	// === API that won't be visible anymore ===
+
+	/**
+	 * @return true if not {@link #isTerminated()} nor {@link #isCancelled()}
+	 * @deprecated will be removed from public API in 3.2.0
+	 */
+	final boolean isPending() {
+		return !isTerminated() && !isCancelled();
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
+	 * otherwise.
+	 * @deprecated use {@link #isDisposed()}
+	 */
+	@Deprecated
+	public boolean isCancelled() {
+		return isDisposed();
+	}
+
+	// === API that overlap with MonoProcessorSink ===
+
+
 	@Override
-	public boolean isSerialized() {
-		return false;
+	public void dispose() {
+		cancel();
+	}
+
+	@Override
+	public boolean isDisposed() {
+		//used to also return true if isTerminated()
+		return state == STATE_CANCELLED;
+	}
+
+	/**
+	 * Return the produced {@link Throwable} error if any or null
+	 *
+	 * @return the produced {@link Throwable} error if any or null
+	 */
+	@Nullable
+	public final Throwable getError() {
+		return error;
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
+	 */
+	public final boolean isError() {
+		return state == STATE_ERROR;
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 * @deprecated use {@link MonoProcessorSink#isComplete()} instead
+	 */
+	public final boolean isSuccess() {
+		return state == STATE_SUCCESS_VALUE || state == STATE_COMPLETE_NO_VALUE;
+	}
+
+	final boolean isValued() {
+		return state == STATE_SUCCESS_VALUE;
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been terminated by the
+	 * source producer with a success or an error.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 */
+	public final boolean isTerminated() {
+		return state > STATE_POST_SUBSCRIBED;
+	}
+
+	/**
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+	 *
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+	 */
+	public final long downstreamCount() {
+		//noinspection ConstantConditions
+		return Scannable.from(processor).inners().count();
+	}
+
+	/**
+	 * Return true if any {@link Subscriber} is actively subscribed
+	 *
+	 * @return true if any {@link Subscriber} is actively subscribed
+	 */
+	public final boolean hasDownstreams() {
+		return downstreamCount() != 0;
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
@@ -592,6 +602,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		@Override
 		public void subscribe(CoreSubscriber actual) {
 
+		}
+
+		@Override
+		public long getAvailableCapacity() {
+			return 0;
 		}
 	}
 

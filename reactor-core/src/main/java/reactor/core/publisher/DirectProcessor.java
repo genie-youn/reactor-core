@@ -41,10 +41,10 @@ import reactor.util.annotation.Nullable;
  * A terminated DirectProcessor will emit the terminal signal to late subscribers.
  *
  * @param <T> the input and output value type
- * @deprecated instantiate through {@link Processors#direct()} and use as a {@link Broadcaster}
+ * @deprecated instantiate through {@link Processors#direct()} and use as a {@link ProcessorSink}
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Broadcaster<T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -94,11 +94,9 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Bro
 		}
 	}
 
-	boolean valued = false;
 
 	@Override
 	public void onNext(T t) {
-		valued = true;
 		Objects.requireNonNull(t, "t");
 
 		DirectInner<T>[] inners = subscribers;
@@ -240,16 +238,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Bro
 	public boolean hasDownstreams() {
 		DirectInner<T>[] s = subscribers;
 		return s != EMPTY && s != TERMINATED;
-	}
-
-	@Override
-	public boolean isSuccess() {
-		return hasCompleted() && valued;
-	}
-
-	@Override
-	public Flux<T> asFlux() {
-		return this;
 	}
 
 	@Override

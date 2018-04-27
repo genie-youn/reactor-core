@@ -79,7 +79,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @deprecated will be replaced by {@link Processors#fanOut()} in 3.2.0
 	 */
 	@Deprecated
-	public final static class Builder<T> implements Processors.FanOutProcessorBuilder {
+	public final static class Builder<T> {
 
 		String name;
 		ExecutorService executor;
@@ -96,10 +96,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		/**
-		 * {@inheritDoc}
-		 * Default name is "WorkQueueProcessor".
+		 * Configures name for this builder. Default value is WorkQueueProcessor.
+		 * Name is push to default if the provided <code>name</code> is null.
+		 * @param name Use a new cached ExecutorService and assign this name to the created threads
+		 *             if {@link #executor(ExecutorService)} is not configured.
+		 * @return builder with provided name
 		 */
-		@Override
 		public Builder<T> name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
@@ -107,7 +109,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures buffer size for this builder. Default value is {@link Queues#SMALL_BUFFER_SIZE}.
+		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
+		 * @return builder with provided buffer size
+		 */
 		public Builder<T> bufferSize(int bufferSize) {
 			if (!Queues.isPowerOfTwo(bufferSize)) {
 				throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
@@ -121,38 +127,68 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#liteBlocking()}.
+		 * Wait strategy is push to default if the provided <code>waitStrategy</code> is null.
+		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
+		 * @return builder with provided wait strategy
+		 */
 		public Builder<T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures auto-cancel for this builder. Default value is true.
+		 * @param autoCancel automatically cancel
+		 * @return builder with provided auto-cancel
+		 */
 		public Builder<T> autoCancel(boolean autoCancel) {
 			this.autoCancel = autoCancel;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
+		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
+		 * if executor is push.
+		 * @param executor A provided ExecutorService to manage threading infrastructure
+		 * @return builder with provided executor
+		 */
 		public Builder<T> executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures an additional {@link ExecutorService} that is used internally
+		 * on each subscription.
+		 * @param requestTaskExecutor internal request executor
+		 * @return builder with provided internal request executor
+		 */
 		public Builder<T> requestTaskExecutor(
 				@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Configures sharing state for this builder. A shared Processor authorizes
+		 * concurrent onNext calls and is suited for multi-threaded publisher that
+		 * will fan-in data.
+		 * @param share true to support concurrent onNext calls
+		 * @return builder with specified sharing
+		 */
 		public Builder<T> share(boolean share) {
 			this.share = share;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Creates a new {@link WorkQueueProcessor} using the properties
+		 * of this builder.
+		 * @return a fresh processor
+		 */
 		public WorkQueueProcessor<T>  build() {
 			String name = this.name != null ? this.name : WorkQueueProcessor.class.getSimpleName();
 			WaitStrategy waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.liteBlocking();

@@ -43,11 +43,11 @@ import reactor.util.context.Context;
  * A base processor used by executor backed processors to take care of their ExecutorService
  *
  * @author Stephane Maldini
- * @deprecated will be simplified into {@link Broadcaster} in 3.2.0
+ * @deprecated will be simplified into {@link ProcessorSink} in 3.2.0
  */
 @Deprecated
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Runnable, Broadcaster<IN> {
+		implements Runnable {
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer,
 			@Nullable Throwable t,
@@ -250,11 +250,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
-	@Override
-	public Flux<IN> asFlux() {
-		return this;
-	}
-
 	/**
 	 * Return the number of parked elements in the emitter backlog.
 	 *
@@ -311,7 +306,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor.dispose()}.
 	 * @return if the underlying executor terminated and false if the timeout elapsed before termination
-	 * @deprecated will be made package-private in 3.2.0, use {@link #disposeAndAwait(Duration)}
+	 * @deprecated will be made package-private in 3.2.0, use {@link FluxProcessorSink#disposeAndAwait(Duration)}
 	 */
 	@Deprecated
 	public final boolean awaitAndShutdown() {
@@ -323,7 +318,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param timeout the timeout value
 	 * @param timeUnit the unit for timeout
      * @return if the underlying executor terminated and false if the timeout elapsed before termination
-	 * @deprecated will be removed in 3.2.0, use {@link #disposeAndAwait(Duration)} instead
+	 * @deprecated will be removed in 3.2.0, use {@link FluxProcessorSink#disposeAndAwait(Duration)} instead
 	 */
 	@Deprecated
 	public final boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
@@ -341,15 +336,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param timeout the timeout value as a {@link java.time.Duration}. Note this is converted to a {@link Long}
 	 * of nanoseconds (which amounts to roughly 292 years maximum timeout).
      * @return if the underlying executor terminated and false if the timeout elapsed before termination
-	 * @deprecated will be removed in 3.2.0, superseded by {@link #disposeAndAwait(Duration)}
+	 * @deprecated will be removed in 3.2.0, superseded by {@link FluxProcessorSink#disposeAndAwait(Duration)}
 	 */
 	@Deprecated
 	public final boolean awaitAndShutdown(Duration timeout) {
-			return disposeAndAwait(timeout);
-	}
-
-	@Override
-	public final boolean disposeAndAwait(Duration timeout) {
 		long nanos = -1;
 		if (!timeout.isNegative()) {
 			nanos = timeout.toNanos();
@@ -385,14 +375,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that have
 	 * not yet been executed.
 	 * @return a Flux instance with the remaining undelivered values
-	 * @deprecated will be removed in 3.2.0, use {@link #forceDispose()} instead
+	 * @deprecated will be removed in 3.2.0, use {@link FluxProcessorSink#forceDispose()} instead
 	 */
+	//TODO make package private
 	final public Flux<IN> forceShutdown() {
-		return forceDispose();
-	}
-
-	@Override
-	public final Flux<IN> forceDispose() {
 		int t = terminated;
 		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();

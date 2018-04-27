@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  * @param <IN> the input value type
  * @param <OUT> the output value type
  *
- * @deprecated use {@link Broadcaster} unless you really need asymmetric IN and OUT types.
+ * @deprecated use {@link ProcessorSink} unless you really need asymmetric IN and OUT types.
  */
 @Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
@@ -127,7 +127,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 
-	//== shared API with Broadcaster ==
+	//== shared API with ProcessorSink ==
+
+	public abstract long getAvailableCapacity();
 
 	@Override
 	public void dispose() {
@@ -255,5 +257,5 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			return new FluxCreate.SerializeOnRequestSink<>(s);
 	}
 
-	//==end of shared API with Broadcaster ==
+	//==end of shared API with ProcessorSink ==
 }

@@ -51,11 +51,10 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link Broadcaster}
+ * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link ProcessorSink}
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T>
-		implements Broadcaster<T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
@@ -158,11 +157,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		this.autoCancel = autoCancel;
 		this.prefetch = prefetch;
 		SUBSCRIBERS.lazySet(this, EMPTY);
-	}
-
-	@Override
-	public Flux<T> asFlux() {
-		return this;
 	}
 
 	@Override
@@ -567,11 +561,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public long downstreamCount() {
 		return subscribers.length;
-	}
-
-	@Override
-	public boolean isSuccess() {
-		return hasCompleted() && !hasError();
 	}
 
 	@Override

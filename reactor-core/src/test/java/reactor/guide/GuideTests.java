@@ -45,7 +45,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Broadcaster;
+import reactor.core.publisher.FluxProcessorSink;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
@@ -202,7 +202,7 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Broadcaster<String> hotSource = Processors.unicast();
+		FluxProcessorSink<String> hotSource = Processors.unicast();
 
 		Flux<String> hotFlux = hotSource.asFlux()
 		                                .publish()
@@ -212,14 +212,14 @@ public class GuideTests {
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-		hotSource.onNext("blue");
-		hotSource.onNext("green");
+		hotSource.next("blue");
+		hotSource.next("green");
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-		hotSource.onNext("orange");
-		hotSource.onNext("purple");
-		hotSource.onComplete();
+		hotSource.next("orange");
+		hotSource.next("purple");
+		hotSource.complete();
 	}
 
 	@Test
