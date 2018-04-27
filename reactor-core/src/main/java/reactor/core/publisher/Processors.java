@@ -27,7 +27,9 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
@@ -77,6 +79,7 @@ public final class Processors {
 	 * @param <T>
 	 * @return a new unicast {@link ProcessorSink}
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> unicast() {
 		return new FluxProcessorSinkAdapter<>(UnicastProcessor.create(), null);
 	}
@@ -198,6 +201,7 @@ public final class Processors {
 	 *
 	 * @return a builder to create a new replay {@link ProcessorSink}
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> replay() {
 		return new FluxProcessorSinkAdapter<>(ReplayProcessor.create(), null);
 	}
@@ -275,6 +279,7 @@ public final class Processors {
 	 * @param <T>
 	 * @return a new replay {@link ProcessorSink} that caches its last pushed element
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> cacheLast() {
 		return new FluxProcessorSinkAdapter<>(ReplayProcessor.cacheLast(), null);
 	}
@@ -288,6 +293,7 @@ public final class Processors {
 	 * @param <T>
 	 * @return a new replay {@link ProcessorSink} that caches its last pushed element
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> cacheLastOrDefault(T defaultValue) {
 		return new FluxProcessorSinkAdapter<>(ReplayProcessor.cacheLastOrDefault(defaultValue), null);
 	}
@@ -392,6 +398,7 @@ public final class Processors {
 	 * @param <T> the type of the processor
 	 * @return a new "first" {@link ProcessorSink} that is detached
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> ProcessorSink<T> first() {
 		return new MonoFirstProcessorSinkAdapter<>(new MonoProcessor<>(null));
 	}
@@ -411,6 +418,7 @@ public final class Processors {
 	 * @param <T> the type of the processor
 	 * @return a new "first" {@link ProcessorSink} that is detached
 	 */
+	@SuppressWarnings("deprecation")
 	public static final <T> ProcessorSink<T> first(WaitStrategy waitStrategy) {
 		return new MonoFirstProcessorSinkAdapter<>(new MonoProcessor<>(null, waitStrategy));
 	}
@@ -507,6 +515,7 @@ public final class Processors {
 		 *
 		 * @return a new unicast {@link FluxProcessorSink Processor}
 		 */
+		@SuppressWarnings("deprecation")
 		public FluxProcessorSink<T> build() {
 			UnicastProcessor<T> processor;
 			if (endcallback != null && onOverflow != null) {
@@ -583,6 +592,7 @@ public final class Processors {
 		 *
 		 * @return a new emitter {@link ProcessorSink}
 		 */
+		@SuppressWarnings("deprecation")
 		public <T> FluxProcessorSink<T> build() {
 			EmitterProcessor<T> processor;
 			if (bufferSize >= 0 && !autoCancel) {
@@ -651,6 +661,7 @@ public final class Processors {
 		 *
 		 * @return a new replay {@link ProcessorSink}
 		 */
+		@SuppressWarnings("deprecation")
 		public <T> FluxProcessorSink<T> build() {
 			ReplayProcessor<T> processor;
 			if (size < 0) {
@@ -721,6 +732,7 @@ public final class Processors {
 		 *
 		 * @return a new replay {@link ProcessorSink}
 		 */
+		@SuppressWarnings("deprecation")
 		public <T> ProcessorSink<T> build() {
 			//replay size and timeout
 			ReplayProcessor<T> processor;
@@ -887,6 +899,7 @@ public final class Processors {
 		 *
 		 * @return a new fanout {@link ProcessorSink}
 		 */
+		@SuppressWarnings("deprecation")
 		public <T> FluxProcessorSink<T>  build() {
 			this.name = this.name != null ? this.name : "fanOut";
 			this.waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
@@ -951,6 +964,7 @@ public final class Processors {
 		 * is attached to a source
 		 */
 		public ProcessorSink<T> withWaitStrategy(WaitStrategy waitStrategy) {
+			@SuppressWarnings("deprecation")
 			MonoProcessor<T> processor = new MonoProcessor<>(this.source, waitStrategy);
 			return new MonoFirstProcessorSinkAdapter<>(processor);
 		}
@@ -962,6 +976,7 @@ public final class Processors {
 		 * @return a new first {@link ProcessorSink} that is attached to a source
 		 */
 		public MonoProcessorSink<T> build() {
+			@SuppressWarnings("deprecation")
 			MonoProcessor<T> processor = new MonoProcessor<>(source);
 			return new MonoFirstProcessorSinkAdapter<>(processor);
 		}
@@ -971,10 +986,12 @@ public final class Processors {
 
 	static class FluxProcessorSinkAdapter<T> implements FluxProcessorSink<T> {
 
+		@SuppressWarnings("deprecation")
 		final FluxProcessor<T, T> processor;
 		final FluxSink<T> sink;
 		final OverflowStrategy overflowStrategy;
 
+		@SuppressWarnings("deprecation")
 		public FluxProcessorSinkAdapter(FluxProcessor<T,T> processor,
 				@Nullable OverflowStrategy overflowStrategy) {
 			this.processor = processor;
@@ -984,6 +1001,16 @@ public final class Processors {
 
 		@Override
 		public Processor<T, T> asProcessor() {
+			return processor;
+		}
+
+		@Override
+		public CoreSubscriber<T> asCoreSubscriber() {
+			return processor;
+		}
+
+		@Override
+		public Scannable asScannable() {
 			return processor;
 		}
 
@@ -1091,17 +1118,20 @@ public final class Processors {
 
 	static final class AsyncFluxProcessorSinkAdapter<T> extends FluxProcessorSinkAdapter<T> {
 
+		@SuppressWarnings("deprecation")
 		public AsyncFluxProcessorSinkAdapter(EventLoopProcessor<T> processor,
-				OverflowStrategy overflowStrategy) {
+				@Nullable OverflowStrategy overflowStrategy) {
 			super(processor, overflowStrategy);
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Flux<T> forceDispose() {
 			return ((EventLoopProcessor<T>) processor).forceShutdown();
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public boolean disposeAndAwait(Duration timeout) {
 			return ((EventLoopProcessor<T>) processor).awaitAndShutdown(timeout);
 		}
@@ -1109,9 +1139,11 @@ public final class Processors {
 
 	static class MonoFirstProcessorSinkAdapter<T> implements MonoProcessorSink<T> {
 
+		@SuppressWarnings("deprecation")
 		final MonoProcessor<T> processor;
 		final MonoSink<T> sink;
 
+		@SuppressWarnings("deprecation")
 		public MonoFirstProcessorSinkAdapter(MonoProcessor<T> processor) {
 			this.processor = processor;
 			this.sink = new MonoCreate.DefaultMonoSink<>(processor);
@@ -1124,6 +1156,16 @@ public final class Processors {
 
 		@Override
 		public Processor<T, T> asProcessor() {
+			return processor;
+		}
+
+		@Override
+		public CoreSubscriber<T> asCoreSubscriber() {
+			return processor;
+		}
+
+		@Override
+		public Scannable asScannable() {
 			return processor;
 		}
 
@@ -1180,6 +1222,7 @@ public final class Processors {
 		//==delegates to processor ==
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public boolean isComplete() {
 			return processor.isSuccess();
 		}

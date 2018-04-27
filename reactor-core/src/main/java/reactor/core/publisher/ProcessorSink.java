@@ -21,7 +21,9 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -29,7 +31,32 @@ import reactor.util.annotation.Nullable;
  */
 public interface ProcessorSink<T> extends Disposable {
 
+	/**
+	 * Return a view of this {@link ProcessorSink} that is a
+	 * {@link Processor Processor&lt;T, T&gt;}.
+	 *
+	 * @return the {@link Processor} backing this {@link ProcessorSink}
+	 */
 	Processor<T, T> asProcessor();
+
+	/**
+	 * Return a view of this {@link ProcessorSink} that is a {@link CoreSubscriber}, or
+	 *
+	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
+	 * should return it wrapped in a {@link CoreSubscriber} adapter.
+	 * @return the {@link CoreSubscriber} backing this {@link ProcessorSink}
+	 */
+	CoreSubscriber<T> asCoreSubscriber();
+
+	/**
+	 * Return a view of this {@link ProcessorSink} that is {@link Scannable}.
+	 * <p>
+	 * Possibly return an unscannable instance if no backing element is Scannable
+	 * (see {@link Scannable#isScanAvailable()}).
+	 *
+	 * @return the {@link Scannable} backing this {@link ProcessorSink}
+	 */
+	Scannable asScannable();
 
 	/**
 	 * Terminate with the give exception
