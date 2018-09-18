@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -33,6 +35,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertTrue;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -116,7 +119,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
+		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -147,7 +150,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
+		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -300,7 +303,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void normalHidden() {
+	public void normalSyncFused() {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
@@ -331,7 +334,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void normalHiddenBackpressured() {
+	public void normalBackpressuredSyncFused() {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
@@ -383,6 +386,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFused() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(v -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + v + Thread.currentThread().getName()))
+		    .share()
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
@@ -593,4 +612,36 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+    //see https://github.com/reactor/reactor-core/issues/1290
+    @Test
+    public void syncFusionSingle() throws Exception { //single value in the SYNC fusion
+	    CountDownLatch valueLatch = new CountDownLatch(1);
+	    CountDownLatch onCompleteLatch = new CountDownLatch(1);
+
+	    Flux.just("foo")
+	        .doOnComplete(onCompleteLatch::countDown)
+	        .doOnNext(v -> valueLatch.countDown())
+	        .publish()
+	        .connect();
+
+	    assertThat(valueLatch.await(4, TimeUnit.SECONDS)).as("all values received").isTrue();
+	    assertThat(onCompleteLatch.await(4, TimeUnit.SECONDS)).as("completed").isTrue();
+    }
+
+    //see https://github.com/reactor/reactor-core/issues/1290
+	@Test
+	public void syncFusionMultiple() throws InterruptedException { //multiple values in the SYNC fusion
+		CountDownLatch valueLatch = new CountDownLatch(5);
+		CountDownLatch onCompleteLatch = new CountDownLatch(1);
+
+		Flux.range(1, 5)
+		    .doOnComplete(onCompleteLatch::countDown)
+		    .doOnNext(v -> valueLatch.countDown())
+		    .publish()
+		    .connect();
+
+		assertThat(valueLatch.await(4, TimeUnit.SECONDS)).as("all values received").isTrue();
+		assertThat(onCompleteLatch.await(4, TimeUnit.SECONDS)).as("completed").isTrue();
+	}
 }

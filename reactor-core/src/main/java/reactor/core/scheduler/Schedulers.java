@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -57,12 +58,15 @@ import static reactor.core.Exceptions.unwrap;
 public abstract class Schedulers {
 
 	/**
-	 * Default pool size, initialized to the number of processors available to the runtime
-	 * on init (but with a minimum value of 4).
+	 * Default pool size, initialized by system property `reactor.schedulers.defaultPoolSize`
+	 * and falls back to the number of processors available to the runtime on init.
 	 *
 	 * @see Runtime#availableProcessors()
 	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors(), 4);
+	public static final int DEFAULT_POOL_SIZE =
+			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultPoolSize"))
+					.map(Integer::parseInt)
+					.orElseGet(() -> Runtime.getRuntime().availableProcessors());
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
@@ -83,7 +87,7 @@ public abstract class Schedulers {
 	 * Runnables for async operators.
 	 *
 	 * @param executor an {@link Executor}
-	 * @param trampoline push to false if this {@link Scheduler} is used by "operators"
+	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"
 	 * that already conflate {@link Runnable} executions (publishOn, subscribeOn...)
 	 *
 	 * @return a new {@link Scheduler}
@@ -114,7 +118,7 @@ public abstract class Schedulers {
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to push a different value.
+	 * factory to set a different value.
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
@@ -152,7 +156,7 @@ public abstract class Schedulers {
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to push a different value.
+	 * factory to set a different value.
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
@@ -235,8 +239,7 @@ public abstract class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(String name) {
-		return newParallel(name, Runtime.getRuntime()
-				       .availableProcessors());
+		return newParallel(name, DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -339,7 +342,7 @@ public abstract class Schedulers {
 	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
 	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
 	 *
-	 * @param c the new hook to push.
+	 * @param c the new hook to set.
 	 */
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
 		if (log.isDebugEnabled()) {
@@ -527,10 +530,8 @@ public abstract class Schedulers {
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
 
-	static final Supplier<Scheduler> PARALLEL_SUPPLIER = () -> newParallel(PARALLEL,
-			Runtime.getRuntime()
-			       .availableProcessors(),
-			true);
+	static final Supplier<Scheduler> PARALLEL_SUPPLIER =
+			() -> newParallel(PARALLEL, DEFAULT_POOL_SIZE, true);
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 

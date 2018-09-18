@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,10 +94,10 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 		volatile boolean done;
 
 		/* `valued` serves as a guard against re-executing the callbacks in onComplete/onError
-		as soon as onNext has been called. So onNext will push the flag immediately, then
+		as soon as onNext has been called. So onNext will set the flag immediately, then
 		onNext/poll will trigger the "valued" version of ALL the callbacks (respectively
 		in NONE mode and SYNC/ASYNC mode). If empty, onCompleted is called without valued
-		being push, so it will execute the "empty" version of ALL callbacks. Same for onError.
+		being set, so it will execute the "empty" version of ALL callbacks. Same for onError.
 
 		Having this flag also prevents callbacks to be attempted twice in the case of a
 		callback failure, which is forwarded to onError if it happens during onNext...
@@ -141,7 +141,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 		public void onSubscribe(Subscription s) {
 			this.s = s;
 			this.queueSubscription =
-					Operators.as(s); //will push it to null if not Fuseable
+					Operators.as(s); //will set it to null if not Fuseable
 
 			actual.onSubscribe(this);
 		}
@@ -158,7 +158,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 					return;
 				}
 				//implementation note: this operator doesn't expect the source to be anything but a Mono
-				//so it doesn't check that valued has been push before
+				//so it doesn't check that valued has been set before
 				valued = true;
 
 				if (parent.onTerminateCall != null) {
@@ -210,7 +210,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 			}
 
 			//implementation note: this operator doesn't expect the source to be anything but a Mono
-			//so it doesn't check that valued has been push before
+			//so it doesn't check that valued has been set before
 			valued = true;
 
 			if (parent.onTerminateCall != null) {
@@ -257,9 +257,11 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 			}
 			done = true;
 
-			if (!valued && parent.onTerminateCall != null) {
+			BiConsumer<? super T, Throwable> onTerminate = parent.onTerminateCall;
+
+			if (!valued && onTerminate != null) {
 				try {
-					parent.onTerminateCall.accept(null, t);
+					onTerminate.accept(null, t);
 				}
 				catch (Throwable e) {
 					t = Operators.onOperatorError(null, e, t, actual.currentContext());
@@ -270,7 +272,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
+				if (onTerminate == null ||
+						!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}

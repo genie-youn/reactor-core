@@ -36,6 +36,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 public class HooksTestStaticInit {
 
@@ -50,13 +51,16 @@ public class HooksTestStaticInit {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
+		Hooks.resetOnDiscard();
 	}
 
 	@Test
 	public void syspropDebugModeShouldNotFail() {
-		assertThat(System.getProperties())
-				.as("debug mode set via system property")
-				.containsEntry("reactor.trace.operatorStacktrace", "true");
+		String operatorStacktracePropertyValue = System.getProperties().getProperty("reactor.trace.operatorStacktrace");
+		assumeThat(operatorStacktracePropertyValue)
+				.as("Skipping test as 'reactor.trace.operatorStacktrace' is not set to true (e.g. ran from IDE)")
+				.isEqualTo("true");
+
 		assertThat(Hooks.getOnEachOperatorHooks())
 				.as("debug hook activated")
 				.containsKey(Hooks.ON_OPERATOR_DEBUG_KEY);

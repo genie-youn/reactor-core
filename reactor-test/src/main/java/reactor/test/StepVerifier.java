@@ -304,7 +304,7 @@ public interface StepVerifier {
 
 	/**
 	 * Verify the signals received by this subscriber. Unless a default timeout has been
-	 * push before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration)},
+	 * set before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration)},
 	 * this method will <strong>block</strong> until the stream has been terminated
 	 * (either through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
 	 * {@link Subscription#cancel()}). Depending on the declared expectations and actions,
@@ -1033,6 +1033,43 @@ public interface StepVerifier {
 		 * other elements were dropped.
 		 */
 		Assertions hasDroppedExactly(Object... values);
+
+		/**
+		 * Assert that the tested publisher has discarded at least one element to the
+		 * {@link Hooks#onDiscard(Consumer)} hook.
+		 * <p>
+		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
+		 * of normal operations, eg. when an element doesn't match a filter.
+		 */
+		Assertions hasDiscardedElements();
+
+		/**
+		 * Assert that the tested publisher has not discarded any element to the
+		 * {@link Hooks#onDiscard(Consumer)} hook.
+		 * <p>
+		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
+		 * of normal operations, eg. when an element doesn't match a filter.
+		 */
+		Assertions hasNotDiscardedElements();
+
+		/**
+		 * Assert that the tested publisher has discarded at least all of the provided
+		 * elements to the {@link Hooks#onDiscard(Consumer)} hook, in any order.
+		 * <p>
+		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
+		 * of normal operations, eg. when an element doesn't match a filter.
+		 */
+		Assertions hasDiscarded(Object... values);
+
+		/**
+		 * Assert that the tested publisher has discarded all of the provided elements to
+		 * the {@link Hooks#onDiscard(Consumer)} hook, in any order, and that no
+		 * other elements were dropped.
+		 * <p>
+		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
+		 * of normal operations, eg. when an element doesn't match a filter.
+		 */
+		Assertions hasDiscardedExactly(Object... values);
 
 		/**
 		 * Assert that the tested publisher has dropped at least one error to the

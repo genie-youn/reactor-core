@@ -1,69 +1,62 @@
-# Welcome to Reactor's Contributor guide!
+# Contributing to Reactor
 
-### Understand the basics
+:+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-Not sure what a pull request is, or how to submit one? Take a look at GitHub's
-excellent [help documentation][] first.
+This document gives you guidelines and pointers at how you should approach contributing.
+Start here:
 
-### Search Stack Overflow first; discuss if necessary
+ - [Do you have a question?](#question-do-you-have-a-question)
+ - [Did you find a bug?](#beetle-did-you-find-a-bug)
+ - [Did you write a patch that fixes a bug?](#wrench-did-you-write-a-patch-that-fixes-a-bug)
+ - [Do you intend to add a new feature or change an existing one?](#mag-do-you-intend-to-add-a-new-feature-or-change-an-existing-one)
+ - [Code style](#art-code-style)
+ - [PR and commit style](#sparkles-pr-and-commit-style)
+ - > be sure to at least look at the [Commit Message Convention](#black_nib-commit-message-convention)
+ - [More details](#speech_balloon-more-details)
+ - [Learning more about the tools we use](#mortar_board-learning-more-about-the-tools-we-use)
+
+The Reactor team appreciates your contributing effort! :heart: :heart: :heart:
+
+## :question: Do you have a question?
+
+> Search Stack Overflow first; discuss if necessary
 
 If you're unsure why something isn't working or wondering if there is a better
 way of doing it please check on Stack Overflow first and if necessary start
-a discussion.
+a discussion. Use the [`project-reactor`](https://stackoverflow.com/questions/tagged/project-reactor) tag for that purpose.
 
-### Search Github Issues; create an issue if necessary
+If you prefer real-time discussion, we also have a [Gitter channel](https://gitter.im/reactor/reactor).
 
-Is there already an issue that addresses your concern? Do a bit of searching
-in our [Issues][] to see if you can find something similar. If you
-do not find something similar, please create a new issue before submitting
-a pull request unless the change is truly trivial -- for example: typo fixes,
-removing compiler warnings, etc.
+## :beetle: Did you find a bug?
 
-### Sign the Individual Contributor License Agreement (ICLA)
+ - **Do not open a GitHub issue if the bug is a security vulnerability in Reactor**: disclose it by following the [CVE process](https://pivotal.io/security) (we share this one with Spring)
+ - **Ensure the bug was not already reported**: Do a bit of searching
+in our [Issues](https://github.com/reactor/reactor-core/issues/) to see if you
+can find something similar
+ - If you don't find something similar, **open a [new issue](http://github.com/reactor/reactor-core/issues/new)**.
+ Be sure to follow the template and to include a title and clear description.
+ Add as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring
 
-If you have not previously done so, please sign the [Spring CLA form](https://cla.pivotal.io/sign/spring).
+## :wrench: Did you write a patch that fixes a bug?
 
-It integrates with Github, just follow the steps. Actually, when you first submit a
-Pull Request a bot will comment on your PR if you haven't signed the CLA (and if you have,
-you'll get a nice green checkmark to the PR checks).
+ - _Unless the fix is trivial_ (typo, cosmetic changes that don't modify the behavior, ...), there **should be an issue** associated with it.See [Did you find a bug?](#beetle-did-you-find-a-bug).
+ - Wait for **issue triage** before you start coding. This will determine from which branch to start. See [Starting from the right branch](#starting-from-the-right-branch) section for more details
+ - Be sure to **[sign](https://cla.pivotal.io/sign/spring) the Contributor Licence Agreement(CLA)**. A bot will remind you about that anyway. The CLA form integrates with GitHub, just follow the steps
+ - Try to create a branch with a **meaningful name** (see hints [here](#creating-a-branch-with-representative-name))
+ - Work on your change. Be sure to include **JUnit test cases**, this will greatly help maintainers while reviewing your change
+ - **Run all tests locally** prior to submission: `./gradlew check`
+ - Finally, you're **ready to submit** your Pull-Request :+1:
 
-## Create a Branch
+## :mag: Do you intend to add a new feature or change an existing one?
+ - Again, **search for similar suggestions** in existing issues (including closed ones)
+ - If nothing like that has been suggested before, **discuss it in a new issue first**
+ - If you gather positive feedback, **work on the change** following the guideline [above](#wrench-did-you-write-a-patch-that-fixes-a-bug)
 
-### Branch from `master`
-
-Master currently represents work toward Reactor 3.1. Please submit
-all pull requests there, even bug fixes and minor improvements. Backports to
-will be considered on a case-by-case basis.
-
-
-### Use short branch names
-
-Branches used when submitting pull requests should preferably be named
-according to Github issues, e.g. 'gh-1234'. Otherwise, use succinct, lower-case,
-dash (-) delimited names, such as 'fix-warnings', 'fix-typo', etc. In
-[fork-and-edit][] cases, the GitHub default 'patch-1' is fine as well. This is
-important, because branch names show up in the merge commits that result from
-accepting pull requests and should be as expressive and concise as possible.
-
-## Use Spring Framework Code Style
-
-Using your IDE code style support:
-
-Eclipse users can import the content of `$PROJECT_DIR/codequality/eclipse`
-
-IntelliJ users can import the xml from `$PROJECT_DIR/codequality/idea`.
-
-IntelliJ users: If your IDE doesn't support import of xml files
-(versions prior to 2016.1) you can copy manually into
-`$HOME/.IntelliJIdea{version}/codestyles`
-
-The complete code style can be found at [Spring Framework Wiki][] but
-here's a quick summary:
-
-### Mind the whitespace
+## :art: Code style
+The Reactor code style can be [imported into your IDE](#importing-and-following-the-reactor-code-style).
 
 Please carefully follow the whitespace and formatting conventions already
-present in the framework.
+present in the codebase. Here is a short summary of the style:
 
 1. Tabs, not spaces
 1. Unix (LF), not DOS (CRLF) line endings
@@ -75,80 +68,113 @@ present in the framework.
     naming conventions, etc.
 1. Latin-1 (ISO-8859-1) encoding for Java sources; use `native2ascii` to convert
     if necessary
+1. Open brackets on same line, close brackets isolated on a dedicated new line
 
 
-### Add Apache license header to all new classes
+## :sparkles: PR and commit style
 
-```java
-/*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ - **Commit early and commit often**. Try to still have **descriptive commit messages** though. This helps during the review process, to see through which steps and train of thought you went
+ - Once submitted, the review and discussion starts. If necessary, make adjustments in **further commits**
+ - Use your **real name** in commits (see [configuration hints](#using-real-names))
+ - _Once the PR is **approved**_ :white_check_mark: , clean up and **prepare for merge** (see [From PR to master](#from-pr-to-master))
 
-package ...;
+### From PR to `master`
+For each PR, there will generally be **a single commit** that goes into `master`. We will try to use the `squash-and-merge` strategy on GitHub to that effect, but if you do that yourself once the PR is approved, it's even better :heart:
+
+Another case where your help is needed in preparing for merge is **if your PR has a few logical changes**, and you'd like to have as many commits.
+(Note that if you have more than, say, 3 of these, it's probably that you actually need to do several PRs).
+If you want us to rebase-and-merge, you'll need to let us know and to perform a manual `git rebase -i BASE_BRANCH` in order to prepare the commits.
+You'll probably need to at least squash intermediate commits from the "commit early and often" side of things, and to ensure that the final commits all follow the message convention.
+
+
+### :black_nib: Commit Message Convention
+We use the following convention for commit message title and body:
+
+```
+PREFIX DESCRIPTION
+
+Longer description of the content of the commit and/or context of the
+changed, hard-wrapped at 72 characters
 ```
 
-### Update Apache license header in modified files as necessary
+ - `PREFIX` is either a `[TAG]` or a more conventional `fix #ISSUE`:
+    - `[TAG]` is for smaller commits that don't have an issue. We notably use `[test]` for test amendments, `[doc]` for small docs changes like typos, `[build]` for fixes to the CI configuration.
+    - most of the time, there should be an issue referenced instead. We prefix with the keyword `fix` so that GitHub will close the issue once the PR is merged. If the PR is a preparation or a follow-up, use `see #ISSUE` instead (eg. `fix #1226` vs `see #1226`). 
+ - `DESCRIPTION` should be a short but meaningful description of the fix, preferably under 50 chars (the whole title line should NOT go over 72 chars)
 
-Always check the date range in the license header. For example, if you've
-modified a file in 2016 whose header still reads:
 
-```java
-/*
- * Copyright (c) 2011-2015 Pivotal Software Inc, All Rights Reserved.
+## :speech_balloon: More details
+
+### Starting from the right branch
+
+Issues are useful before opening a pull-request because they allow the Reactor
+team to do some triage, answer questions and help with designing a fix.
+
+Additionally, during the triage process the team will evaluate the criticality
+of the reported issue and decide wether or not it should also be fixed in current
+maintenance branche(s).
+
+If this is the case, the fix should be implemented against the earliest relevant
+maintenance branch, which will be indicated in the issue as the _milestone_.
+
+For instance, if an issue should be fixed in both 3.1 and 3.2, the later being
+developed on master, the fix PR should be opened against `3.1.x` (and the issue
+will be triaged into `3.1.x Maintenance Backlog`).
+
+If on the other hand the issue should only be fixed in the next feature release,
+it will be affected to the `Backlog` triage milestone and should be developed
+against `master`.
+
+### Creating a branch with representative name
+
+Branches used when submitting pull requests should preferably be named
+according to the `xxx-shortDescription` convention:
+
+ - `xxx` is the github issue number
+ - use a `-` separator, at least after issue number
+ - `shortDescription` should be a few representative words about the issue
+ 
+For example: `1226-lastOnEmptyCallable`.
+
+
+### More about commits
+
+#### Message convention
+Here is a more detailed example of the commit message convention:
+
+```
+    fix #ISSUE Prefer short (50 chars) summary of changes
+
+    More detailed explanatory text, if necessary. Wrap it to about 72
+    characters or so. In some contexts, the first line is treated as the
+    subject of an email and the rest of the text as the body. The blank
+    line separating the summary from the body is critical (unless you omit
+    the body entirely); tools like rebase can get confused if you run the
+    two together.
+
+    Further paragraphs come after blank lines.
+
+     - Bullet points are okay, too
+
+     - Typically a hyphen or asterisk is used for the bullet, preceded by a
+       single space, with blank lines in between, but conventions vary here
+
+    Related Issues: #1234, gh-1235
 ```
 
-Then be sure to update it to 2016 accordingly:
 
-```java
-/*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
-```
+1. Use imperative statements in the subject line, e.g. "Fix broken Javadoc link".
+1. Begin the DESCRIPTION with a capitalized verb, e.g. "Add, Prune, Fix,
+    Introduce, Avoid, etc."
+1. Prefix the subject line with "fix #XXX " if the commit is fixing issue XXX (or
+    replace "fix" with "see" if it is only related to an issue without closing it)
+1. Do not end the subject line with a period.
+1. Restrict the subject line to 72 characters or less.
+1. Wrap lines in the body at 72 characters or less.
+1. In the body of the commit message, explain how things worked before this
+    commit, what has changed, and how things work now.
 
-### Use @since tags for newly-added public API types and methods
-
-For example:
-
-```java
-/**
- * ...
- *
- * @author First Last
- * @since 3.0.0
- * @see ...
- */
-```
-
-## Prepare Your Commit
-
-### Submit JUnit test cases for all behavior changes
-
-If you know how, test your changes, it will be a great help for all maintainers and will speed up your pull request to be merged.
-
-### Squashing commits
-
-Prefer squashing the commits in your PR in a final single well-commented commit. We
-also have the option of "squash-and-merge" the PR at the end though.
-
-Use `git rebase --interactive --autosquash`, `git add --patch`, and other tools
-to "squash" multiple commits into a single atomic commit. In addition to the man
-pages for git, there are many resources online to help you understand how these
-tools work. The [Rewriting History section of Pro Git][] provides a good overview.
-
-
-### Use real name in git commits
-
+#### Using real names
 Please configure git to use your real first and last name for any commits you
 intend to submit as pull requests. For example, this is not acceptable:
 
@@ -174,57 +200,66 @@ or _locally_ for the `reactor-core` repository only by omitting the
     cd reactor-core
     git config user.name "First Last"
     git config user.email user@mail.com
+    
+### Importing and following the Reactor Code Style
+
+Using your IDE code style support:
+
+Eclipse users can import the content of `$PROJECT_DIR/codequality/eclipse`
+
+IntelliJ users can import the xml from `$PROJECT_DIR/codequality/idea`.
+
+IntelliJ users: If your IDE doesn't support import of xml files
+(versions prior to 2016.1) you can copy manually into
+`$HOME/.IntelliJIdea{version}/codestyles`
+
+#### Add Apache license header to all new classes
+
+```java
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ...;
+```
+
+#### Update Apache license header in modified files as necessary
+
+Always check the date range in the license header. For example, if you've
+modified a file in 2018 whose header still reads:
+
+```java
+/*
+ * Copyright (c) 2011-2015 Pivotal Software Inc, All Rights Reserved.
+ */
+```
+
+Then be sure to update it to 2018 accordingly:
+
+```java
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ */
+```
 
 
-### Format commit messages
+## :mortar_board: Learning more about the tools we use
 
-Please read and follow the [Commit Guidelines section of Pro Git][].
-
-Most importantly, please format your commit messages in the following way
-(adapted from the commit template in the link above):
-
-    Fix #ISSUE Short (50 chars or less) summary of changes
-
-    More detailed explanatory text, if necessary. Wrap it to about 72
-    characters or so. In some contexts, the first line is treated as the
-    subject of an email and the rest of the text as the body. The blank
-    line separating the summary from the body is critical (unless you omit
-    the body entirely); tools like rebase can get confused if you run the
-    two together.
-
-    Further paragraphs come after blank lines.
-
-     - Bullet points are okay, too
-
-     - Typically a hyphen or asterisk is used for the bullet, preceded by a
-       single space, with blank lines in between, but conventions vary here
-
-    Related Issues: gh-1234, gh-1235
-
-
-1. Use imperative statements in the subject line, e.g. "Fix broken Javadoc link".
-1. Begin the subject line with a capitalized verb, e.g. "Add, Prune, Fix,
-    Introduce, Avoid, etc."
-1. Prefix the subject line with "fix #XXX " if the commit is fixing issue XXX (or
-    replace "fix" with "see" if it is only related to an issue without closing it)
-1. Do not end the subject line with a period.
-1. Restrict the subject line to 72 characters or less.
-1. Wrap lines in the body at 72 characters or less.
-1. In the body of the commit message, explain how things worked before this
-    commit, what has changed, and how things work now.
-
-
-
-## Run the Final Checklist
-
-### Run all tests prior to submission
-
-All unit tests can be run using your IDE, if you wish, you can use gradle to do
-the job by simply using the `./gradlew test` command
-
-### Submit your pull request
-
-Subject line:
+### Pull-Requests
+Not sure what a pull request is, or how to submit one? Take a look at GitHub's
+excellent [help documentation](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/) first.
 
 Follow the same conventions for pull request subject lines as mentioned above
 for commit message subject lines.
@@ -235,20 +270,18 @@ In the body:
    mechanisms in the framework insufficient? Make a case that this is a
    general-purpose problem and that yours is a general-purpose solution, etc.
 1. Add any additional information and ask questions; start a conversation or
-   continue one from JIRA.
-1. Mention the Github issue ID.
-1. Also mention that you have submitted the ICLA as described above.
+   continue one from the original GitHub issue.
+1. Mention the Github issue ID if there is one.
 
 Note that for pull requests containing a single commit, GitHub will default the
 subject line and body of the pull request to match the subject line and body of
 the commit message. This is fine, but please also include the items above in the
 body of the request.
 
+### Squashing Commits
+To learn more about these techniques, like `git rebase --interactive --autosquash`,
+`git add --patch`, and other tools to "squash" multiple commits into a single
+atomic commit, in addition to the man pages for git.
+The [Rewriting History section of Pro Git](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History)
+provides a good overview about these tools.
 
-[help documentation]: http://help.github.com/send-pull-requests
-[Issues]: https://github.com/reactor/reactor-core/issues
-[Spring CLA]: https://cla.pivotal.io/sign/spring
-[fork-and-edit]: https://github.com/blog/844-forking-with-the-edit-button
-[Spring Framework Wiki]: https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-Code-Style
-[Rewriting History section of Pro Git]: http://git-scm.com/book/en/Git-Tools-Rewriting-History
-[Commit Guidelines section of Pro Git]: http://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project#Commit-Guidelines

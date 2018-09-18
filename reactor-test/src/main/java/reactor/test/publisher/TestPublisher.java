@@ -35,13 +35,17 @@ import reactor.util.annotation.Nullable;
  * and allow "spec violations", as enumerated in {@link Violation}. Use the
  * {@link #createNoncompliant(Violation, Violation...)} factory method to create such
  * a misbehaving publisher.
+ * <p>
+ * TestPublisher are generally hot, directly propagating signals to currently subscribed
+ * downstreams and only replaying the first termination signal to subsequent subscribers.
+ * TestPublishers are also generally not safe to use from multiple parallel threads.
  *
  * @author Simon Basle
  */
 public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T> {
 
 	/**
-	 * Create a standard {@link TestPublisher}.
+	 * Create a standard hot {@link TestPublisher}.
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
@@ -51,8 +55,8 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	}
 
 	/**
-	 * Create a {@link Violation noncompliant} {@link TestPublisher}
-	 * with a given push of reactive streams spec violations that will be overlooked.
+	 * Create a {@link Violation noncompliant} hot {@link TestPublisher}
+	 * with a given set of reactive streams spec violations that will be overlooked.
 	 *
 	 * @param first the first allowed {@link Violation}
 	 * @param rest additional optional violations
@@ -61,6 +65,20 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 */
 	public static <T> TestPublisher<T> createNoncompliant(Violation first, Violation... rest) {
 		return new DefaultTestPublisher<>(first, rest);
+	}
+
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * all subscribers upon subscription.
+	 * <p>
+	 * Note that this type of {@link Publisher} isn't
+	 *
+	 * @param <T> the type of the publisher
+	 * @return the new {@link TestPublisher}
+	 */
+	public static <T> TestPublisher<T> createCold() {
+		return new ColdTestPublisher<>();
 	}
 
 	/**
@@ -147,7 +165,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	/**
 	 * Send 1 {@link Subscriber#onNext(Object) onNext} signal to the subscribers.
 	 *
-	 * @param value the item to emit (can be null if the relevant {@link Violation} is push)
+	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
 	 * @return this {@link TestPublisher} for chaining.
 	 */
 	public abstract TestPublisher<T> next(@Nullable T value);
@@ -221,6 +239,11 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 		 * {@link TestPublisher#complete()}, {@link TestPublisher#error(Throwable)} and
 		 * {@link TestPublisher#emit(Object[])}.
 		 */
-		CLEANUP_ON_TERMINATE
+		CLEANUP_ON_TERMINATE,
+		/**
+		 * Allow the {@link TestPublisher} to ignore cancellation signals and continue
+		 * emitting signals as if the cancellation lost race agains said signals.
+		 */
+		DEFER_CANCELLATION
 	}
 }

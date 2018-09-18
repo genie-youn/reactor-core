@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -85,6 +86,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				remove(p);
 			}
 			wasSubscribed = true;
+
+			if (replayOnSubscribe != null) {
+				replayOnSubscribe.accept(this);
+			}
+
 		} else {
 			Throwable e = error;
 			if (e != null) {
@@ -241,6 +247,18 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		}
 	}
 
+	private Consumer<TestPublisher<T>> replayOnSubscribe = null;
+
+	public TestPublisher<T> replayOnSubscribe(Consumer<TestPublisher<T>> replay) {
+		if (replayOnSubscribe == null) {
+			replayOnSubscribe = replay;
+		}
+		else {
+			replayOnSubscribe = replayOnSubscribe.andThen(replay);
+		}
+		return this;
+	}
+
 	@Override
 	public Flux<T> flux() {
 		return Flux.from(this);
@@ -263,7 +281,12 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public Mono<T> mono() {
-		return Mono.from(this);
+		if (violations.isEmpty()) {
+			return Mono.from(this);
+		}
+		else {
+			return Mono.fromDirect(this);
+		}
 	}
 
 	@Override

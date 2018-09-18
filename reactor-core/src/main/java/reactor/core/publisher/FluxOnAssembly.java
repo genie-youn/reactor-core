@@ -52,7 +52,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	final AssemblySnapshotException snapshotStack;
 
 	/**
-	 * If push to true, the creation of FluxOnAssembly will capture the raw stacktrace
+	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
 	 * instead of the sanitized version.
 	 */
 	static final boolean fullStackTrace = Boolean.parseBoolean(System.getProperty(
@@ -366,11 +366,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Override
 		public String stepName() {
 			return toString();
-		}
-
-		@Override
-		public String operatorName() {
-			return stepName();
 		}
 
 		@Override
